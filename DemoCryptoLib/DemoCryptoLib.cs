@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace DemoCryptoLib;
@@ -24,13 +26,14 @@ public class DemoCryptoLib
     public static string GeneratePasswordHashUsingSaltOptimized(string passwordText, byte[] salt)
     {
         const int iterate = 10000;
-        using var pbkdf2 = new Rfc2898DeriveBytes(passwordText, salt, iterate);
+        var pbkdf2 = new Rfc2898DeriveBytes(passwordText, salt, iterate);
 
-        byte[] hash = pbkdf2.GetBytes(20);
+        var hash = pbkdf2.GetBytes(20);
 
-        var hashBytes = new byte[36];
-        Array.Copy(salt, 0, hashBytes, 0, 16);
-        Array.Copy(hash, 0, hashBytes, 16, 20);
+        Span<byte> hashBytes = stackalloc byte[36];
+
+        salt.AsSpan().CopyTo(hashBytes);
+        hash.AsSpan().CopyTo(hashBytes[16..]);
 
         string passwordHash = Convert.ToBase64String(hashBytes);
 
