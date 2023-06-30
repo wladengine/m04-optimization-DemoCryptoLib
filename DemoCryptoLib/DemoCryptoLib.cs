@@ -7,10 +7,11 @@ namespace DemoCryptoLib;
 
 public class DemoCryptoLib
 {
+    private const int Iterate = 10000;
+
     public static string GeneratePasswordHashUsingSalt(string passwordText, byte[] salt)
     {
-        const int iterate = 10000;
-        var pbkdf2 = new Rfc2898DeriveBytes(passwordText, salt, iterate);
+        var pbkdf2 = new Rfc2898DeriveBytes(passwordText, salt, Iterate);
 
         byte[] hash = pbkdf2.GetBytes(20);
 
@@ -23,17 +24,14 @@ public class DemoCryptoLib
         return passwordHash;
     }
 
-    public static string GeneratePasswordHashUsingSaltOptimized(string passwordText, byte[] salt)
+    public static string GeneratePasswordHashUsingSaltOptimized(string passwordText, ReadOnlySpan<byte> salt)
     {
-        const int iterate = 10000;
-        var pbkdf2 = new Rfc2898DeriveBytes(passwordText, salt, iterate);
-
-        var hash = pbkdf2.GetBytes(20);
+        Span<byte> pbkdf2Bytes = stackalloc byte[20];
+        Rfc2898DeriveBytes.Pbkdf2(passwordText.AsSpan(), salt, pbkdf2Bytes, Iterate, HashAlgorithmName.SHA1);
 
         Span<byte> hashBytes = stackalloc byte[36];
-
-        salt.AsSpan().CopyTo(hashBytes);
-        hash.AsSpan().CopyTo(hashBytes[16..]);
+        salt.CopyTo(hashBytes);
+        pbkdf2Bytes.CopyTo(hashBytes[16..]);
 
         string passwordHash = Convert.ToBase64String(hashBytes);
 
